@@ -107,6 +107,20 @@ begin
   update public.profiles set session_token = null where id = uid;
 end $$;
 
+-- Foydalanuvchini firmalari bilan birga o'chirish (bosh admin: buxgalter va sayt admini; sayt admini: faqat buxgalter)
+create or replace function public.admin_delete_user(uid uuid) returns void language plpgsql security definer set search_path = public, auth as $$
+declare target_role text;
+begin
+  if uid = auth.uid() then raise exception 'SELF_DELETE'; end if;
+  select role into target_role from public.profiles where id = uid;
+  if target_role = 'admin' then raise exception 'NOT_ALLOWED'; end if;
+  if not (public.is_admin() or (public.has_perm('users') and coalesce(target_role, 'accountant') = 'accountant')) then
+    raise exception 'NOT_ALLOWED';
+  end if;
+  delete from public.firms where owner_id = uid;   -- yozuvlar va tarix ham (cascade) o'chadi
+  delete from auth.users where id = uid;           -- profil ham (cascade) o'chadi
+end $$;
+
 -- Buxgalter o'z rolini, limitini va muddatini o'zgartira olmaydi
 create or replace function public.protect_profile() returns trigger language plpgsql security definer set search_path = public as $$
 begin
