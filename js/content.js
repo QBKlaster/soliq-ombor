@@ -293,8 +293,11 @@
         const fields = [...Forms.F.user(!u).filter((f) => !['firm_limit', 'expires_at'].includes(f.k)), ...PERMS.map((p) => ({ k: 'perm_' + p[0], type: 'check', label: p[1], full: true }))];
         const r = await A.openModal('rec-form', { title: u ? t('Sayt admini') + ': ' + u.login : t('Yangi sayt admini'), fields, value: val,
           note: t('Sayt admini bosh adminni va boshqa adminlarni o\'zgartira olmaydi'),
-          onSave: async (m) => { const { password, p, ...d } = m; d.role = 'manager'; d.firm_limit = d.firm_limit || 0; d.perms = Object.fromEntries(PERMS.map((x) => [x[0], !!m['perm_' + x[0]]])); PERMS.forEach((x) => delete d['perm_' + x[0]]); return S.store.saveUser(d, password); } });
-        if (r) { S.users = await S.store.listUsers(); A.toast(t('Saqlandi')); }
+          onSave: async (m) => { const { password, p, ...d } = m; d.role = 'manager'; d.firm_limit = d.firm_limit || 0; d.perms = Object.fromEntries(PERMS.map((x) => [x[0], !!m['perm_' + x[0]]])); PERMS.forEach((x) => delete d['perm_' + x[0]]); return S.store.saveUser(d, password); },
+          onDelete: u ? async () => { await S.store.deleteUser(u.id); } : null,
+          deleteText: u ? t('"{0}" sayt admini butunlay o\'chiriladi. Davom etasizmi?', u.login) : '' });
+        if (r === 'deleted') { S.users = await S.store.listUsers(); await A.loadFirms(); A.toast(t("O'chirildi")); }
+        else if (r) { S.users = await S.store.listUsers(); A.toast(t('Saqlandi')); }
       }
     },
     template: `

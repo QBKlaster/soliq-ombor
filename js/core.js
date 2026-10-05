@@ -70,7 +70,7 @@
   const ERR = {
     ERR_LOGIN: "Login yoki parol noto'g'ri", ERR_BLOCKED: 'Hisobingiz faol emas. Administratorga murojaat qiling',
     ERR_EXPIRED: "Obuna muddati tugagan. Administratorga murojaat qiling", ERR_FIRM_LIMIT: 'Firmalar limiti tugagan. Limitni oshirish uchun administratorga murojaat qiling',
-    ERR_LOGIN_TAKEN: 'Bu login band', ERR_PERIOD_CLOSED: 'Bu davr yopilgan. O\'zgartirish uchun avval davrni oching', ERR_CLOUD_IMPORT: 'Bulut rejimida zaxiradan tiklash mavjud emas'
+    ERR_LOGIN_TAKEN: 'Bu login band', ERR_PERIOD_CLOSED: 'Bu davr yopilgan. O\'zgartirish uchun avval davrni oching', ERR_CLOUD_IMPORT: 'Bulut rejimida zaxiradan tiklash mavjud emas', ERR_SELF_DELETE: "O'zingizni o'chira olmaysiz", ERR_NOT_ALLOWED: "Bu foydalanuvchini o'chirishga huquqingiz yo'q"
   };
   const errText = (e) => { const m = (e && e.message) || String(e); return ERR[m] ? t(ERR[m]) : m; };
 

@@ -76,9 +76,12 @@
       async edit(u) {
         const r = await A.openModal('rec-form', {
           title: u ? t('Buxgalter') + ': ' + u.login : t('Yangi buxgalter'), fields: Forms.F.user(!u), value: u || {},
-          onSave: async (m) => { const { password, used, ...d } = m; return S.store.saveUser(d, password); }
+          onSave: async (m) => { const { password, used, ...d } = m; return S.store.saveUser(d, password); },
+          onDelete: u ? async () => { await S.store.deleteUser(u.id); } : null,
+          deleteText: u ? t('"{0}" buxgalteri va uning {1} ta firmasi barcha ma\'lumotlari bilan butunlay o\'chiriladi. Buni qaytarib bo\'lmaydi. Davom etasizmi?', u.login, S.firms.filter((f) => f.owner_id === u.id).length) : ''
         });
-        if (r) { S.users = await S.store.listUsers(); A.toast(t('Saqlandi')); }
+        if (r === 'deleted') { S.users = await S.store.listUsers(); await A.loadFirms(); A.toast(t("O'chirildi")); }
+        else if (r) { S.users = await S.store.listUsers(); A.toast(t('Saqlandi')); }
       }
     },
     template: `

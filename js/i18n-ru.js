@@ -304,3 +304,8 @@ Object.assign(window.RU, {
   'Nomi (ixtiyoriy)': 'Название (необязательно)', 'Qatordagi mahsulot nomi': 'Название товара в строке',
   "Katalog nomi o'zi qo'yiladi, xohlasangiz o'zgartiring. Bitta MXIK kodga bir nechta mahsulot ochish mumkin (masalan: Sheben 5-10 mm, Sheben 10-20 mm) — har birining qoldig'i alohida yuritiladi": 'Название из каталога подставляется автоматически, его можно изменить. На один код ИКПУ можно завести несколько товаров (например: Щебень 5-10 мм, Щебень 10-20 мм) — остаток каждого ведётся отдельно'
 });
+Object.assign(window.RU, {
+  "O'zingizni o'chira olmaysiz": 'Нельзя удалить самого себя', "Bu foydalanuvchini o'chirishga huquqingiz yo'q": 'У вас нет прав на удаление этого пользователя',
+  '"{0}" buxgalteri va uning {1} ta firmasi barcha ma\'lumotlari bilan butunlay o\'chiriladi. Buni qaytarib bo\'lmaydi. Davom etasizmi?': 'Бухгалтер «{0}» и его фирмы ({1}) будут удалены вместе со всеми данными без возможности восстановления. Продолжить?',
+  '"{0}" sayt admini butunlay o\'chiriladi. Davom etasizmi?': 'Администратор сайта «{0}» будет удалён без возможности восстановления. Продолжить?'
+});

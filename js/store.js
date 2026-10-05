@@ -98,6 +98,19 @@
         await kv.put('users', u); current = u; return clean(u);
       },
       async listUsers() { return (await kv.all('users')).map(clean); },
+      async deleteUser(id) {
+        const u = await kv.get('users', id);
+        if (!u) return;
+        if (u.id === current.id) throw new Error('ERR_SELF_DELETE');
+        if (u.role === 'admin') throw new Error('ERR_NOT_ALLOWED');
+        if (current.role !== 'admin' && !(current.role === 'manager' && (current.perms || {}).users && (!u.role || u.role === 'accountant'))) throw new Error('ERR_NOT_ALLOWED');
+        for (const f of (await kv.all('firms')).filter((x) => x.owner_id === id)) {
+          for (const r of await kv.all('records', 'firm_id', f.id)) await kv.del('records', r.id);
+          for (const a of await kv.all('audit', 'firm_id', f.id)) await kv.del('audit', a.id);
+          await kv.del('firms', f.id);
+        }
+        await kv.del('users', id);
+      },
       async saveUser(data, password) {
         const all = await kv.all('users');
         if (all.some((x) => x.login.toLowerCase() === data.login.toLowerCase() && x.id !== data.id)) throw new Error('ERR_LOGIN_TAKEN');
@@ -205,6 +218,10 @@
       },
       async changePassword(newPass) { const r = await sb.auth.updateUser({ password: newPass }); if (r.error) throw new Error(r.error.message); chk(await sb.from('profiles').update({ must_change: false }).eq('id', profile.id)); profile.must_change = false; return profile; },
       async listUsers() { return chk(await sb.from('profiles').select('*').order('created_at')); },
+      async deleteUser(id) {
+        const r = await sb.rpc('admin_delete_user', { uid: id });
+        if (r.error) { const m = r.error.message || ''; throw new Error(m.includes('SELF') ? 'ERR_SELF_DELETE' : m.includes('NOT_ALLOWED') || m.includes('NOT_ADMIN') ? 'ERR_NOT_ALLOWED' : m); }
+      },
       async saveUser(data, password) {
         let id = data.id;
         if (!id) {

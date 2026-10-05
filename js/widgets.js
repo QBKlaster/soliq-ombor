@@ -121,7 +121,7 @@
 
   /* Umumiy forma (modal ichida) */
   C['rec-form'] = {
-    props: { title: String, fields: Array, value: Object, onSave: Function, onDelete: Function, readonly: Boolean, wide: Boolean, note: String },
+    props: { title: String, fields: Array, value: Object, onSave: Function, onDelete: Function, deleteText: String, readonly: Boolean, wide: Boolean, note: String },
     data() { const m = JSON.parse(JSON.stringify(this.value || {})); (this.fields || []).forEach((f) => { if (m[f.k] === undefined && f.def !== undefined) m[f.k] = typeof f.def === 'function' ? f.def() : f.def; }); return { m, err: '', saving: false, hints: {} }; },
     computed: { visible() { return this.fields.filter((f) => !f.show || f.show(this.m)); } },
     methods: {
@@ -143,7 +143,7 @@
         this.saving = false;
       },
       async del() {
-        if (!(await A.ask(t("O'chirishni tasdiqlaysizmi?"), t("O'chirish"), true))) return;
+        if (!(await A.ask(this.deleteText || t("O'chirishni tasdiqlaysizmi?"), t("O'chirish"), true))) return;
         try { await this.onDelete(this.m); A.closeModal('deleted'); } catch (e) { this.err = A.errText(e); }
       }
     },
