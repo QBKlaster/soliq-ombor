@@ -96,6 +96,28 @@ Kompyuterda sinash uchun: papka ichida `npx serve .` yoki `python -m http.server
 - Hujjat qatorlarida mahsulot tanlangandan keyin ixtiyoriy **"Nomi"** katagi chiqadi (masalan, "Navoiy karyeri"); u Excel va Kirim-chiqim tahlilida ko'rinadi va qidiriladi.
 - Mahsulot kartochkasida MXIK tanlanganda buxgalter yozgan nom endi o'chib ketmaydi. Bitta MXIK kodga bir nechta mahsulot ochish mumkin, har birining qoldig'i alohida yuritiladi.
 
+## 9-versiya: hujjat biriktirish
+- Asosiy vosita, xarajat va to'lov kartasiga PDF va rasmlarni biriktirish (bir nechta fayl, sudrab tashlash, telefondan suratga olish).
+- Avtomatik siqish: rasm uzun tomoni 2000 px gacha, JPEG 80%; 1 MB dan katta PDF sahifalari 150 dpi rasmga aylantirilib qayta yig'iladi (25% dan kam tejalsa asli qoladi). Siqilgandan keyin bitta fayl 10 MB gacha.
+- Jadvallarda 📎 ustuni: nechta hujjat biriktirilgani.
+- Bulut: fayllar Supabase Storage'dagi yopiq `hujjatlar` omborida (`firma/yozuv/fayl`), ro'yxati `files` jadvalida; kirish huquqi firmaga qarab. Yangilash uchun `supabase/yangilash-hujjatlar.sql` ni bir marta ishga tushiring.
+- Yozuv, firma yoki buxgalter o'chirilsa, uning fayllari ham o'chadi.
+- Tuzatildi: asosiy vosita ochilganda "Asosiy vosita schyoti" maydoniga jamg'arilgan eskirish summasi tushib qolardi.
+
+## 10-versiya: mahsulot nomi va MXIK kodi alohida
+- Kalkulyatsiyada mahsulot nomi, MXIK kodi va o'lchov birligi alohida maydonlarda. Bitta MXIK kodda bir nechta mahsulot (Lotok 3 m, Lotok 6 m), har birining qoldig'i, tannarxi va kalkulyatsiyasi alohida.
+- "Boshqa o'lcham uchun nusxa": kalkulyatsiyani homashyo va xarajatlari bilan yangi mahsulotga ko'chiradi.
+- Mahsulot kartasida "Nusxa olish (boshqa o'lcham/tur)" tugmasi.
+- Bir xil nomli ikkita mahsulot ochib bo'lmaydi (katta-kichik harf va ortiqcha bo'shliq hisobga olinmaydi).
+- Hujjat qatoridagi "Qo'shimcha nom" faqat yorliq: qoldig'i alohida kerak bo'lsa alohida mahsulot ochiladi.
+
+## 11-versiya: Bank (hisob raqam) va hisob-fakturalar
+- Yangi "Bank (hisob raqam)" bo'limi: bank orqali kirim va chiqimlar, har qatordan keyingi qoldiq, davr boshiga va oxiriga qoldiq (boshlang'ich qoldiq 51xx schyotlaridan olinadi), sana/yo'nalish/kontragent/faktura holati bo'yicha filtr, Excel.
+- Har bir to'lov uchun hisob-faktura holati: kirimda "faktura yuborilgan", chiqimda "faktura qabul qilingan", qisman yoki fakturasiz (avans). To'lovlar kontragent hujjatlariga (sotuv, kirim, xarajat, asosiy vosita) sana tartibida avtomatik bog'lanadi.
+- To'lov kartasida: "Avtomatik", "Faktura bor (tizimga kiritilmagan)" (raqam va sana bilan) yoki "Faktura talab qilinmaydi" (soliq, ish haqi, qarz).
+- "Fakturalar bo'yicha to'lovlar" yorlig'i: har bir faktura to'langan, qisman yoki to'lanmaganligi va qaysi to'lovlar bilan yopilgani.
+- Xarajatda (kontragentsiz) "Qanday to'langan: bank / naqd" maydoni; bankdan to'langanlari bank harakatida ko'rinadi.
+
 ## Ma'lum cheklovlar (keyingi yangilanishlar uchun)
 
 - Excel**dan** import hali yo'q (Excelga eksport bor).

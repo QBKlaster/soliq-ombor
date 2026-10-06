@@ -19,16 +19,24 @@
   function idb() {
     return new Promise((res, rej) => {
       let req;
-      try { req = indexedDB.open('soliq-hisob', 1); } catch (e) { return rej(e); }
-      req.onupgradeneeded = () => {
+      try { req = indexedDB.open('soliq-hisob', 2); } catch (e) { return rej(e); }
+      req.onupgradeneeded = (ev) => {
         const db = req.result;
-        db.createObjectStore('users', { keyPath: 'id' });
-        db.createObjectStore('firms', { keyPath: 'id' });
-        const r = db.createObjectStore('records', { keyPath: 'id' });
-        r.createIndex('firm_id', 'firm_id');
-        const a = db.createObjectStore('audit', { keyPath: 'id' });
-        a.createIndex('firm_id', 'firm_id');
-        db.createObjectStore('meta', { keyPath: 'key' });
+        if (ev.oldVersion < 1) {
+          db.createObjectStore('users', { keyPath: 'id' });
+          db.createObjectStore('firms', { keyPath: 'id' });
+          const r = db.createObjectStore('records', { keyPath: 'id' });
+          r.createIndex('firm_id', 'firm_id');
+          const a = db.createObjectStore('audit', { keyPath: 'id' });
+          a.createIndex('firm_id', 'firm_id');
+          db.createObjectStore('meta', { keyPath: 'key' });
+        }
+        if (ev.oldVersion < 2) {
+          // biriktirilgan hujjatlar: ma'lumoti va fayl o'zi alohida
+          const f = db.createObjectStore('files', { keyPath: 'id' });
+          f.createIndex('firm_id', 'firm_id');
+          db.createObjectStore('blobs', { keyPath: 'id' });
+        }
       };
       req.onsuccess = () => res(req.result);
       req.onerror = () => rej(req.error);
@@ -36,7 +44,7 @@
   }
 
   function makeMem() {
-    const stores = { users: new Map(), firms: new Map(), records: new Map(), audit: new Map(), meta: new Map() };
+    const stores = { users: new Map(), firms: new Map(), records: new Map(), audit: new Map(), meta: new Map(), files: new Map(), blobs: new Map() };
     const keyOf = (s, v) => (s === 'meta' ? v.key : v.id);
     return {
       async all(s, idx, val) { const arr = [...stores[s].values()]; return idx ? arr.filter((x) => x[idx] === val) : arr; },
@@ -44,6 +52,7 @@
       async put(s, v) { stores[s].set(keyOf(s, v), JSON.parse(JSON.stringify(v))); },
       async del(s, k) { stores[s].delete(k); },
       async clear(s) { stores[s].clear(); },
+      async putRaw(s, v) { stores[s].set(v.id, v); },
       persistent: false
     };
   }
@@ -58,6 +67,7 @@
       async put(s, v) { return p(tx(s, 'readwrite').put(JSON.parse(JSON.stringify(v)))); },
       async del(s, k) { return p(tx(s, 'readwrite').delete(k)); },
       async clear(s) { return p(tx(s, 'readwrite').clear()); },
+      async putRaw(s, v) { return p(tx(s, 'readwrite').put(v)); },
       persistent: true
     };
   }
@@ -74,6 +84,7 @@
     let current = null;
     try { const sid = localStorage.getItem('sh_session'); if (sid) { const u = await kv.get('users', sid); if (u && u.active) current = u; } } catch (e) { }
 
+    async function delFirmFiles(firmId) { for (const f of await kv.all('files', 'firm_id', firmId)) { await kv.del('blobs', f.id); await kv.del('files', f.id); } }
     const clean = (u) => { if (!u) return u; const c = { ...u }; delete c.pass_hash; delete c.salt; return c; };
 
     return {
@@ -107,6 +118,7 @@
         for (const f of (await kv.all('firms')).filter((x) => x.owner_id === id)) {
           for (const r of await kv.all('records', 'firm_id', f.id)) await kv.del('records', r.id);
           for (const a of await kv.all('audit', 'firm_id', f.id)) await kv.del('audit', a.id);
+          await delFirmFiles(f.id);
           await kv.del('firms', f.id);
         }
         await kv.del('users', id);
@@ -144,8 +156,14 @@
       async deleteFirm(id) {
         const recs = await kv.all('records', 'firm_id', id);
         for (const r of recs) await kv.del('records', r.id);
+        await delFirmFiles(id);
         await kv.del('firms', id);
       },
+      /* biriktirilgan hujjatlar */
+      async listFiles(firmId) { return kv.all('files', 'firm_id', firmId); },
+      async addFile(meta, blob) { await kv.putRaw('blobs', { id: meta.id, blob }); await kv.put('files', meta); return meta; },
+      async fileUrl(meta) { const b = await kv.get('blobs', meta.id); if (!b) throw new Error('ERR_FILE_MISSING'); return URL.createObjectURL(b.blob); },
+      async deleteFile(meta) { await kv.del('blobs', meta.id); await kv.del('files', meta.id); },
       async loadRecords(firmId) { return kv.all('records', 'firm_id', firmId); },
       async putRecord(r) { await kv.put('records', r); return r; },
       async putRecords(arr) { for (const r of arr) await kv.put('records', r); },
@@ -177,6 +195,7 @@
     const toEmail = (login) => (login.includes('@') ? login : login.trim().toLowerCase() + '@' + domain);
     let profile = null;
     const chk = (r) => { if (r.error) throw new Error(r.error.message); return r.data; };
+    const BUCKET = 'hujjatlar';
 
     async function loadProfile() {
       const { data: { user } } = await sb.auth.getUser();
@@ -221,6 +240,9 @@
       async deleteUser(id) {
         const r = await sb.rpc('admin_delete_user', { uid: id });
         if (r.error) { const m = r.error.message || ''; throw new Error(m.includes('SELF') ? 'ERR_SELF_DELETE' : m.includes('NOT_ALLOWED') || m.includes('NOT_ADMIN') ? 'ERR_NOT_ALLOWED' : m); }
+        // o'chirilgan firmalarning fayllarini omborxonadan tozalaymiz
+        const paths = Array.isArray(r.data) ? r.data.filter(Boolean) : [];
+        for (let i = 0; i < paths.length; i += 500) { try { await sb.storage.from(BUCKET).remove(paths.slice(i, i + 500)); } catch (e) { } }
       },
       async saveUser(data, password) {
         let id = data.id;
@@ -263,7 +285,38 @@
         }
         return firmOut(chk(await sb.from('firms').update({ data, closed_until: closed_until || null }).eq('id', id).select().single()));
       },
-      async deleteFirm(id) { chk(await sb.from('firms').delete().eq('id', id)); },
+      async deleteFirm(id) {
+        let paths = [];
+        try { paths = chk(await sb.from('files').select('path').eq('firm_id', id)).map((x) => x.path); } catch (e) { }
+        chk(await sb.from('firms').delete().eq('id', id));
+        for (let i = 0; i < paths.length; i += 500) { try { await sb.storage.from(BUCKET).remove(paths.slice(i, i + 500)); } catch (e) { } }
+      },
+      /* biriktirilgan hujjatlar: ma'lumoti "files" jadvalida, fayl o'zi Storage'da */
+      async listFiles(firmId) {
+        const r = await sb.from('files').select('*').eq('firm_id', firmId);
+        if (r.error) { if (/files|relation|schema/i.test(r.error.message)) return []; throw new Error(r.error.message); }
+        return r.data;
+      },
+      async addFile(meta, blob) {
+        const ext = meta.mime === 'application/pdf' ? 'pdf' : meta.mime === 'image/png' ? 'png' : meta.mime === 'image/webp' ? 'webp' : 'jpg';
+        const path = meta.firm_id + '/' + meta.rec_id + '/' + meta.id + '.' + ext;
+        const up = await sb.storage.from(BUCKET).upload(path, blob, { contentType: meta.mime, upsert: false });
+        if (up.error) throw new Error(/bucket/i.test(up.error.message) ? 'ERR_NO_BUCKET' : up.error.message);
+        const row = { ...meta, path }; delete row.created_by;
+        const ins = await sb.from('files').insert(row).select().single();
+        if (ins.error) { await sb.storage.from(BUCKET).remove([path]); throw new Error(/files|relation|schema/i.test(ins.error.message) ? 'ERR_NO_BUCKET' : ins.error.message); }
+        return ins.data;
+      },
+      async fileUrl(meta, download) {
+        const r = await sb.storage.from(BUCKET).createSignedUrl(meta.path, 3600, download ? { download: meta.name } : undefined);
+        if (r.error) throw new Error(r.error.message);
+        return r.data.signedUrl;
+      },
+      async deleteFile(meta) {
+        const r = await sb.storage.from(BUCKET).remove([meta.path]);
+        if (r.error) throw new Error(r.error.message);
+        chk(await sb.from('files').delete().eq('id', meta.id));
+      },
       async loadRecords(firmId) {
         const out = []; let from = 0; const step = 1000;
         for (; ;) {

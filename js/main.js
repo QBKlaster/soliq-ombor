@@ -86,7 +86,7 @@
 
   const NAV = [
     ['dash', 'Bosh sahifa', '◧'], ['docs', 'Hujjatlar', '▤'], ['lines', 'Kirim-chiqim tahlili', '⧉'], ['products', 'Mahsulotlar', '▦'], ['stock', 'Ombor qoldiqlari', '▥'], ['warehouses', 'Omborlar', '⌂'], ['production', 'Ishlab chiqarish', '⚒'],
-    ['assets', 'Asosiy vositalar', '◫'], ['expenses', 'Xarajatlar', '▿'], ['cps', 'Kontragentlar', '◎'], ['accounting', 'Buxgalteriya', '⊞'], ['reports', 'Soliq hisobotlari', '∑'], ['stats', 'Statistika', '◔'], ['calendar', 'Soliq kalendari', '▣'], ['settings', 'Sozlamalar', '⚙']
+    ['assets', 'Asosiy vositalar', '◫'], ['expenses', 'Xarajatlar', '▿'], ['cps', 'Kontragentlar', '◎'], ['bank', 'Bank (hisob raqam)', '⇄'], ['accounting', 'Buxgalteriya', '⊞'], ['reports', 'Soliq hisobotlari', '∑'], ['stats', 'Statistika', '◔'], ['calendar', 'Soliq kalendari', '▣'], ['settings', 'Sozlamalar', '⚙']
   ];
   const ADMIN_NAV = [['users', 'Buxgalterlar', '◎', 'users'], ['admins', 'Sayt adminlari', '◉', 'ADMIN'], ['firms', 'Barcha firmalar', '▦', 'firms'], ['content', 'Yangiliklar va reklama', '✎', 'content'],
     ['calendar', 'Soliq kalendari', '▣', ''], ['settings', 'Soliq stavkalari', '%', 'rates'], ['mine', 'Firmalarim', '◧', '']];
@@ -97,7 +97,7 @@
     computed: {
       adminNav() { return ADMIN_NAV.filter((n) => !n[3] || (n[3] === 'ADMIN' ? S.user.role === 'admin' : A.can(n[3]))); },
       roleName() { return S.user.role === 'admin' ? t('Bosh admin') : S.user.role === 'manager' ? t('Sayt admini') : t('Buxgalter'); },
-      viewComp() { return { stats: 'stats-view', lines: 'lines-view', accounting: 'accounting-view', calendar: 'calendar-view', dash: 'dash-view', docs: 'docs-view', products: 'products-view', stock: 'stock-view', warehouses: 'warehouses-view', production: 'production-view', assets: 'assets-view', expenses: 'expenses-view', cps: 'cps-view', reports: 'reports-view', settings: 'settings-view' }[S.view]; } },
+      viewComp() { return { stats: 'stats-view', lines: 'lines-view', accounting: 'accounting-view', calendar: 'calendar-view', dash: 'dash-view', docs: 'docs-view', products: 'products-view', stock: 'stock-view', warehouses: 'warehouses-view', production: 'production-view', assets: 'assets-view', expenses: 'expenses-view', cps: 'cps-view', bank: 'bank-view', reports: 'reports-view', settings: 'settings-view' }[S.view]; } },
     methods: {
       go(v) { S.view = v; S.editDoc = null; S.sideOpen = false; window.scrollTo(0, 0); },
       adminGo(v) { A.closeFirm(); S.adminView = v; S.sideOpen = false; },

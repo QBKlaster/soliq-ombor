@@ -2,6 +2,9 @@
 (function () {
   const A = window.App; const { S, t } = A; const C = window.Components; const E = window.Engine;
 
+  // mahsulot kartasidan forma maydonlari
+  const pfOf = (p) => ({ name: (p && p.name) || '', mxik: (p && p.mxik) || '', unit: (p && p.unit) || '', mxik_name: (p && p.mxik_name) || '', units: [], auto: '' });
+
   /* Kalkulyatsiya muharriri */
   C['recipe-editor'] = {
     props: { recipe: Object },
@@ -9,10 +12,12 @@
     data() {
       const r = this.recipe ? JSON.parse(JSON.stringify(this.recipe)) : { product: '', mats: [], costs: [], note: '' };
       if (!r.mats.length) r.mats.push({ p: '', per: null, loss: null });
-      return { r, err: '', saving: false, batch: 1, wh: '' };
+      return { r, pf: pfOf(A.byId(r.product)), err: '', saving: false, batch: 1, wh: '' };
     },
     computed: {
       prod() { return A.byId(this.r.product); },
+      unitLocked() { const id = this.r.product; return !!id && A.recsOf('doc').some((d) => (d.lines || []).some((l) => l.p === id || (l.mats || []).some((m) => m.p === id))) || A.recsOf('recipe').some((x) => x.id !== this.r.id && (x.mats || []).some((m) => m.p === id)); },
+      unitOpts() { const pref = this.pf.units || []; return [...pref, ...S.units.map((u) => u.id).filter((id) => !pref.includes(id))]; },
       rc() { return E.recipeCost(this.r, S.calc, this.wh); },
       used() { return this.r.id && A.recsOf('doc').some((d) => d.type === 'production' && (d.lines || []).some((l) => l.p === this.r.product)); },
       whs() { return A.recsOf('warehouse'); }
@@ -27,25 +32,52 @@
       },
       async newProduct(q) {
         const r = await Forms.editRec('product', null, { init: { ...(/^\d+$/.test(q) ? { mxik: q } : { name: q }), ptype: 'produced' } });
-        if (r && r.id) this.r.product = r.id;
+        if (r && r.id) this.pickExisting(r.id);
+      },
+      /* mavjud mahsulotni tanlash: nomi, MXIK va o'lchovi maydonlarga tushadi */
+      pickExisting(id) {
+        const other = A.recsOf('recipe').find((x) => x.product === id && x.id !== this.r.id);
+        if (other) { this.err = t('Bu mahsulot uchun kalkulyatsiya allaqachon bor'); return; }
+        this.err = ''; this.r.product = id; this.pf = pfOf(A.byId(id));
+      },
+      mxPick(it) {
+        const auto = A.catName(it.name);
+        if (!this.pf.name.trim() || this.pf.name === this.pf.auto) this.pf.name = auto;
+        this.pf.auto = auto; this.pf.mxik_name = it.name; this.pf.units = it.units || [];
+        if (!this.unitLocked && it.units && it.units.length && !it.units.includes(this.pf.unit)) this.pf.unit = it.units[0];
+      },
+      /* boshqa o'lcham uchun: homashyo va xarajatlar ko'chiriladi, mahsulot yangi bo'ladi */
+      copy() {
+        const r = JSON.parse(JSON.stringify(this.r));
+        this.r = { product: '', mats: r.mats.filter((m) => m.p), costs: r.costs, note: r.note || '' };
+        if (!this.r.mats.length) this.addMat();
+        this.pf = { ...this.pf, name: this.pf.name + ' ' + t('(nusxa)'), auto: '' };
+        this.err = ''; A.toast(t('Nusxa olindi: nomini o\'zgartiring (masalan, 6 m), miqdorlarni to\'g\'rilang va saqlang'));
+        this.$nextTick(() => { const el = document.getElementById('rc-name'); if (el) { el.focus(); el.select(); } });
       },
       async save() {
         this.err = '';
-        const p = this.prod;
-        if (!p) return (this.err = t('Ishlab chiqariladigan mahsulotni tanlang'));
-        if (!/^\d{17}$/.test(p.mxik || '')) return (this.err = t('Kalkulyatsiyadan oldin mahsulotga MXIK kodi biriktiring'));
-        const other = A.recsOf('recipe').find((x) => x.product === p.id && x.id !== this.r.id);
-        if (other) return (this.err = t('Bu mahsulot uchun kalkulyatsiya allaqachon bor'));
+        const pf = this.pf; const name = (pf.name || '').trim().replace(/\s+/g, ' ');
+        if (!name) return (this.err = t('Mahsulot nomini yozing (masalan: Lotok 3 m)'));
+        if (!/^\d{17}$/.test(pf.mxik || '')) return (this.err = t('MXIK kodini tanlang (17 ta raqam)'));
+        if (!pf.unit) return (this.err = t("O'lchov birligini tanlang"));
+        if (A.dupProduct(name, this.r.product)) return (this.err = t('"{0}" nomli mahsulot allaqachon bor. Uni "Mavjud mahsulotni tanlash" orqali tanlang yoki boshqa nom bering', name));
         const mats = this.r.mats.filter((m) => m.p);
         if (!mats.length) return (this.err = t('Kamida bitta homashyo qo\'shing'));
         if (mats.some((m) => !(Number(m.per) > 0))) return (this.err = t('Homashyo miqdori noldan katta bo\'lishi kerak'));
-        if (mats.some((m) => m.p === p.id)) return (this.err = t('Mahsulot o\'zining homashyosi bo\'la olmaydi'));
+        if (this.r.product && mats.some((m) => m.p === this.r.product)) return (this.err = t('Mahsulot o\'zining homashyosi bo\'la olmaydi'));
         const costs = this.r.costs.filter((c) => c.name || Number(c.per));
         this.saving = true;
         try {
-          if (p.ptype !== 'produced') await A.saveRec('product', { ...p, ptype: 'produced' });
+          // mahsulot kartasi: yangi bo'lsa yaratiladi, bor bo'lsa nomi/MXIK/o'lchovi yangilanadi
+          const old = this.prod;
+          const upd = { name, mxik: pf.mxik, unit: pf.unit, ptype: 'produced' };
+          if (pf.mxik_name) upd.mxik_name = pf.mxik_name;
+          if (!old) { const np = await A.saveRec('product', { ...upd, vat: 'std', units_alt: [] }); this.r.product = np.id; }
+          else if (old.name !== name || old.mxik !== pf.mxik || old.unit !== pf.unit || old.ptype !== 'produced') await A.saveRec('product', { ...old, ...upd });
           const saved = await A.saveRec('recipe', { ...this.r, mats, costs });
           this.r = JSON.parse(JSON.stringify(saved)); if (!this.r.mats.length) this.addMat();
+          this.pf = pfOf(A.byId(this.r.product));
           A.toast(t('Kalkulyatsiya saqlandi'));
         } catch (e) { this.err = A.errText(e); }
         this.saving = false;
@@ -70,18 +102,29 @@
     <section class="page">
       <header class="page-h">
         <div><button class="link back" @click="$emit('close')">← {{t('Kalkulyatsiyalar')}}</button>
-          <h1>{{t('Kalkulyatsiya')}}<span v-if="prod">: {{prod.name}}</span></h1>
-          <p class="muted" v-if="prod">MXIK <span class="mono">{{prod.mxik}}</span> · {{t('O\\'lchov')}}: {{unitName(prod.unit)}}</p></div>
+          <h1>{{t('Kalkulyatsiya')}}<span v-if="pf.name.trim()">: {{pf.name}}</span></h1>
+          <p class="muted" v-if="pf.mxik">MXIK <span class="mono">{{pf.mxik}}</span><template v-if="pf.unit"> · {{t('O\\'lchov')}}: {{unitName(pf.unit)}}</template></p></div>
         <div class="row-gap wrap">
           <button v-if="r.id" class="btn ghost sm" @click="exp">⤓ Excel</button>
+          <button v-if="r.id" class="btn ghost sm" @click="copy" :title="t('Masalan, 3 metrlik lotokdan 6 metrlik uchun')">⧉ {{t('Boshqa o\\'lcham uchun nusxa')}}</button>
           <button v-if="r.id" class="btn ghost sm" @click="produce">+ {{t('Ishlab chiqarish hujjati')}}</button>
           <button v-if="r.id" class="btn danger ghost sm" @click="del">{{t("O'chirish")}}</button>
         </div>
       </header>
       <div class="doc-head">
-        <div class="fld wide"><label>{{t('Ishlab chiqariladigan mahsulot')}}</label>
-          <prod-select v-model="r.product" @new="newProduct" :exclude="''"></prod-select>
-          <small class="hint">{{t('Mahsulotga MXIK kodi biriktirilgan bo\\'lishi shart')}}</small></div>
+        <div class="fld wide"><label for="rc-name">{{t('Mahsulot nomi')}}<b class="req">*</b></label>
+          <input id="rc-name" v-model="pf.name" :placeholder="t('Masalan: Lotok 3 m')">
+          <small class="hint">{{t('Har bir o\\'lcham yoki tur alohida nom bilan: qoldig\\'i, tannarxi va kalkulyatsiyasi alohida yuritiladi')}}</small></div>
+        <div class="fld wide"><label for="mxik-q">{{t('MXIK kodi')}}<b class="req">*</b></label>
+          <mxik-input v-model="pf.mxik" @pick="mxPick"></mxik-input>
+          <small class="hint" v-if="pf.mxik_name">{{t('Katalogda')}}: {{catName(pf.mxik_name)}}</small>
+          <small class="hint" v-else>{{t('Bir nechta mahsulot bitta MXIK kodda bo\\'lishi mumkin')}}</small></div>
+        <div class="fld"><label for="rc-unit">{{t("O'lchov birligi")}}<b class="req">*</b></label>
+          <select id="rc-unit" v-model="pf.unit" :disabled="unitLocked"><option value="" disabled>{{t('Tanlang')}}</option>
+            <option v-for="u in unitOpts" :key="u" :value="u">{{unitName(u)}}<template v-if="(pf.units||[]).includes(u)"> ★</template></option></select>
+          <small class="hint" v-if="unitLocked">{{t('Hujjatlarda ishlatilgan, o\\'zgartirib bo\\'lmaydi')}}</small></div>
+        <div class="fld wide"><label>{{t('Yoki mavjud mahsulotni tanlash')}}</label>
+          <prod-select :model-value="r.product" @update:model-value="pickExisting" @new="newProduct" :exclude="''"></prod-select></div>
         <div class="fld"><label for="rc-batch">{{t('Necha birlik uchun hisoblash')}}</label><input id="rc-batch" type="number" step="any" class="num" v-model.number="batch"></div>
         <div class="fld"><label for="rc-wh">{{t('Qoldiqni qaysi ombordan tekshirish')}}</label>
           <select id="rc-wh" v-model="wh"><option value="">{{t('Barcha omborlar')}}</option><option v-for="w in whs" :key="w.id" :value="w.id">{{w.name}}</option></select></div>

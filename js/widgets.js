@@ -121,7 +121,7 @@
 
   /* Umumiy forma (modal ichida) */
   C['rec-form'] = {
-    props: { title: String, fields: Array, value: Object, onSave: Function, onDelete: Function, deleteText: String, readonly: Boolean, wide: Boolean, note: String },
+    props: { title: String, fields: Array, value: Object, onSave: Function, onDelete: Function, deleteText: String, readonly: Boolean, wide: Boolean, note: String, actions: Array },
     data() { const m = JSON.parse(JSON.stringify(this.value || {})); (this.fields || []).forEach((f) => { if (m[f.k] === undefined && f.def !== undefined) m[f.k] = typeof f.def === 'function' ? f.def() : f.def; }); return { m, err: '', saving: false, hints: {} }; },
     computed: { visible() { return this.fields.filter((f) => !f.show || f.show(this.m)); } },
     methods: {
@@ -138,7 +138,11 @@
         }
         for (const f of this.visible) if (f.type === 'entries') this.m[f.k] = (this.m[f.k] || []).filter((e) => e.dt || e.kt || Number(e.sum));
         this.saving = true;
-        try { const r = await this.onSave(this.m); A.closeModal(r || true); }
+        try {
+          const r = await this.onSave(this.m);
+          for (const b of [].concat(this.$refs.files || [])) if (b && b.flush) await b.flush((r && r.id) || this.m.id);
+          A.closeModal(r || true);
+        }
         catch (e) { this.err = A.errText(e); }
         this.saving = false;
       },
@@ -166,6 +170,7 @@
             <input v-else-if="f.type==='number'" :id="'fld-'+f.k" type="number" step="any" v-model.number="m[f.k]" class="num" :readonly="readonly" @input="changed(f)">
             <entries-editor v-else-if="f.type==='entries'" :rows="m[f.k]" :suggest="f.suggest ? () => f.suggest(m) : null" :locked="readonly"></entries-editor>
             <acc-select v-else-if="f.type==='acc'" v-model="m[f.k]"></acc-select>
+            <file-box v-else-if="f.type==='files'" ref="files" :rec-id="value && value.id"></file-box>
             <div v-else-if="f.type==='image'" class="img-fld">
               <img v-if="m[f.k]" :src="m[f.k]" alt="">
               <label class="btn ghost sm file">{{ m[f.k] ? t('Rasmni almashtirish') : t('Rasm tanlash') }}<input type="file" accept="image/*" @change="pickImg(f, $event)" :id="'fld-'+f.k"></label>
@@ -197,6 +202,7 @@
       </form>
       <template #footer>
         <button v-if="onDelete && value && value.id && !readonly" class="btn danger ghost" @click="del">{{t("O'chirish")}}</button>
+        <button v-for="a in (value && value.id && actions) || []" :key="a.label" type="button" class="btn ghost" @click="a.run(m)">{{a.label}}</button>
         <span class="grow"></span>
         <button class="btn ghost" @click="closeModal()">{{t('Bekor qilish')}}</button>
         <button v-if="!readonly" class="btn primary" :disabled="saving" @click="save">{{t('Saqlash')}}</button>
@@ -247,7 +253,7 @@
           <thead><tr><th v-for="c in cols" :key="c.k" :class="{num:c.num}" @click="sortBy(c)">{{t(c.label)}}<span v-if="sort===c.k">{{dir>0?' ▲':' ▼'}}</span></th></tr></thead>
           <tbody>
             <tr v-for="row in shown.slice(0,limit)" :key="row.id || JSON.stringify(row)" :class="[{click:clickable}, row._cls]" @click="$emit('row',row)">
-              <td v-for="c in cols" :key="c.k" :class="[{num:c.num, mono:c.mono}, c.cls]">{{cell(c,row)}}</td>
+              <td v-for="c in cols" :key="c.k" :class="[{num:c.num, mono:c.mono}, typeof c.cls === 'function' ? c.cls(row) : c.cls]">{{cell(c,row)}}</td>
             </tr>
             <tr v-if="!shown.length"><td :colspan="cols.length" class="empty">{{ empty ? t(empty) : t("Hozircha yozuv yo'q") }}</td></tr>
           </tbody>

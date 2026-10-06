@@ -309,3 +309,48 @@ Object.assign(window.RU, {
   '"{0}" buxgalteri va uning {1} ta firmasi barcha ma\'lumotlari bilan butunlay o\'chiriladi. Buni qaytarib bo\'lmaydi. Davom etasizmi?': 'Бухгалтер «{0}» и его фирмы ({1}) будут удалены вместе со всеми данными без возможности восстановления. Продолжить?',
   '"{0}" sayt admini butunlay o\'chiriladi. Davom etasizmi?': 'Администратор сайта «{0}» будет удалён без возможности восстановления. Продолжить?'
 });
+Object.assign(window.RU, {
+  'Hujjatlar (PDF, rasm)': 'Документы (PDF, фото)', 'Fayl tanlash': 'Выбрать файл', 'yoki shu yerga tashlang': 'или перетащите сюда',
+  'PDF yoki rasm. Rasmlar va katta PDF lar avtomatik siqiladi. Telefondan suratga olib yuklash ham mumkin': 'PDF или фото. Фото и большие PDF сжимаются автоматически. С телефона можно сразу сфотографировать',
+  'Jami: {0}': 'Всего: {0}', '{0} dan siqildi': 'сжато с {0}', 'saqlanganda yuklanadi': 'загрузится при сохранении', 'Hujjat biriktirilmagan': 'Документы не прикреплены',
+  '{0}: siqilmoqda…': '{0}: сжатие…', 'Saqlanmoqda…': 'Сохранение…', '{0}-bet / {1}': 'стр. {0} из {1}',
+  '"{0}" fayli o\'chirilsinmi?': 'Удалить файл «{0}»?', "Ba'zi fayllar saqlanmadi": 'Некоторые файлы не сохранены',
+  "Fayl juda katta ({0}). Eng ko'pi 50 MB": 'Файл слишком большой ({0}). Максимум 50 МБ', "Siqilgandan keyin ham fayl katta ({0}). Eng ko'pi 10 MB": 'Файл слишком большой даже после сжатия ({0}). Максимум 10 МБ',
+  "Bu rasmni o'qib bo'lmadi. JPG, PNG yoki PDF ko'rinishida yuklang": 'Не удалось прочитать изображение. Загрузите JPG, PNG или PDF',
+  'Faqat PDF yoki rasm (JPG, PNG) yuklash mumkin': 'Можно загружать только PDF или изображения (JPG, PNG)', "Kutubxonani yuklab bo'lmadi": 'Не удалось загрузить библиотеку',
+  "Hujjatlar ombori sozlanmagan. Administrator Supabase'da yangilash SQL'ini ishga tushirishi kerak": 'Хранилище документов не настроено. Администратор должен выполнить SQL-обновление в Supabase',
+  'Fayl topilmadi': 'Файл не найден'
+});
+Object.assign(window.RU, {
+  'Mahsulot nomi (sizning nomingiz)': 'Название товара (ваше)', 'Masalan: Lotok 3 m': 'Например: Лоток 3 м', 'Mahsulot nomi': 'Название товара', 'MXIK kodi': 'Код ИКПУ',
+  "Katalog nomi o'zi qo'yiladi, xohlasangiz o'zgartiring. Bitta MXIK kodga bir nechta mahsulot ochish mumkin (masalan: Lotok 3 m, Lotok 6 m) — har birining qoldig'i, tannarxi va kalkulyatsiyasi alohida yuritiladi": 'Название из каталога подставляется автоматически, его можно изменить. На один код ИКПУ можно завести несколько товаров (например: Лоток 3 м, Лоток 6 м) — остатки, себестоимость и калькуляция ведутся отдельно',
+  '"{0}" nomli mahsulot allaqachon bor. Boshqa nom bering (masalan, o\'lchamini qo\'shing)': 'Товар «{0}» уже существует. Укажите другое название (например, добавьте размер)',
+  "Nusxa olish (boshqa o'lcham/tur)": 'Копировать (другой размер/вид)', '(nusxa)': '(копия)',
+  "Boshqa o'lcham uchun nusxa": 'Копия для другого размера', 'Masalan, 3 metrlik lotokdan 6 metrlik uchun': 'Например, из лотка 3 м для лотка 6 м',
+  "Har bir o'lcham yoki tur alohida nom bilan: qoldig'i, tannarxi va kalkulyatsiyasi alohida yuritiladi": 'Каждый размер или вид — под своим названием: остатки, себестоимость и калькуляция ведутся отдельно',
+  'Katalogda': 'В каталоге', "Bir nechta mahsulot bitta MXIK kodda bo'lishi mumkin": 'Несколько товаров могут иметь один код ИКПУ', "O'lchov birligi": 'Единица измерения',
+  "Hujjatlarda ishlatilgan, o'zgartirib bo'lmaydi": 'Используется в документах, изменить нельзя', 'Yoki mavjud mahsulotni tanlash': 'Или выберите существующий товар',
+  "Nusxa olindi: nomini o'zgartiring (masalan, 6 m), miqdorlarni to'g'rilang va saqlang": 'Копия создана: измените название (например, 6 м), поправьте нормы и сохраните',
+  'Mahsulot nomini yozing (masalan: Lotok 3 m)': 'Укажите название товара (например: Лоток 3 м)', 'MXIK kodini tanlang (17 ta raqam)': 'Выберите код ИКПУ (17 цифр)', "O'lchov birligini tanlang": 'Выберите единицу измерения',
+  '"{0}" nomli mahsulot allaqachon bor. Uni "Mavjud mahsulotni tanlash" orqali tanlang yoki boshqa nom bering': 'Товар «{0}» уже существует. Выберите его в поле «существующий товар» или укажите другое название',
+  "Qo'shimcha nom (ixtiyoriy)": 'Доп. название (необяз.)', "Faqat shu hujjatda ko'rinadi. Qoldig'i alohida yuritilishi kerak bo'lsa, alohida mahsulot oching": 'Видно только в этом документе. Если остатки нужно вести отдельно — заведите отдельный товар'
+});
+Object.assign(window.RU, {
+  'Bank (hisob raqam)': 'Банк (расчётный счёт)', 'Firma rekvizitlarida bank va hisob raqamni kiriting': 'Укажите банк и расчётный счёт в реквизитах фирмы',
+  "Chiqim (biz to'ladik)": 'Расход (мы оплатили)', "Kirim (bizga to'landi)": 'Приход (нам оплатили)', 'Hisob-faktura': 'Счёт-фактура',
+  'Faktura bor': 'Есть фактура', 'Qisman': 'Частично', 'Fakturasiz': 'Без фактуры', 'Talab qilinmaydi': 'Не требуется',
+  'Davr boshiga qoldiq': 'Остаток на начало периода', 'Davr oxiriga qoldiq': 'Остаток на конец периода', "Boshlang'ich qoldiq: {0}": 'Начальный остаток: {0}', "Boshlang'ich qoldiq kiritilmagan": 'Начальный остаток не введён',
+  'Fakturasiz: {0}': 'Без фактуры: {0}', 'Hammasiga faktura yuborilgan': 'По всем выставлены фактуры', 'Hammasiga faktura kelgan': 'По всем получены фактуры',
+  'Bank harakati': 'Движение по банку', "Fakturalar bo'yicha to'lovlar": 'Оплата по фактурам', "Bu davrda bank orqali to'lov yo'q": 'За период нет банковских платежей', "Bu davrda faktura yo'q": 'За период нет фактур',
+  "To'lovlar kontragentning fakturalariga sana tartibida (eng eskisidan) bog'lanadi: avans to'langan bo'lsa, keyin yozilgan faktura uni yopadi. Soliq, ish haqi, qarz kabi fakturasi bo'lmaydigan to'lovlarda to'lov kartasida \"Faktura talab qilinmaydi\" ni tanlang. Kontragentsiz bankdan to'langan xarajatlar ham shu yerda ko'rinadi.": 'Платежи привязываются к фактурам контрагента по дате (с самой ранней): если был аванс, его закрывает выписанная позже фактура. Для платежей без фактуры (налоги, зарплата, займы) выберите в карточке платежа «Фактура не требуется». Расходы без контрагента, оплаченные с р/с, тоже показываются здесь.',
+  'yuborilgan': 'выставлена', 'qabul qilingan': 'получена', 'Faktura {0}': 'Фактура {0}', '(tizimdan tashqari)': '(вне системы)', 'Faktura talab qilinmaydi': 'Фактура не требуется',
+  'Qisman: {0} fakturasiz': 'Частично: {0} без фактуры', 'Faktura yuborilmagan (avans)': 'Фактура не выставлена (аванс)', 'Faktura kelmagan (avans)': 'Фактура не получена (аванс)', 'Xarajat: {0}': 'Расход: {0}',
+  'Hujjat (faktura)': 'Документ (фактура)', 'Biz yuborgan': 'Выставленная', 'Bizga kelgan': 'Полученная', 'Faktura summasi': 'Сумма фактуры', "To'langan": 'Оплачено', "To'lanmagan": 'Не оплачено',
+  "✓ To'langan": '✓ Оплачено', "◐ Qisman to'langan": '◐ Оплачено частично', "✕ To'lanmagan": '✕ Не оплачено', "To'lovlar": 'Платежи',
+  "Avtomatik: kontragentdan kelgan fakturalar bo'yicha": 'Автоматически: по полученным от контрагента фактурам', "Avtomatik: kontragentga yuborilgan fakturalar bo'yicha": 'Автоматически: по выставленным контрагенту фактурам',
+  'Faktura qabul qilingan (tizimga kiritilmagan)': 'Фактура получена (не внесена в систему)', 'Faktura yuborilgan (tizimga kiritilmagan)': 'Фактура выставлена (не внесена в систему)',
+  'Faktura talab qilinmaydi (soliq, ish haqi, qarz, kredit)': 'Фактура не требуется (налоги, зарплата, займ, кредит)',
+  "Avtomatik rejimda to'lov shu kontragentning hujjatlariga (sotuv, kirim, xarajat, asosiy vosita) sana tartibida bog'lanadi": 'В автоматическом режиме платёж привязывается к документам контрагента (продажа, приход, расход, ОС) по дате',
+  'Faktura raqami': 'Номер фактуры', 'Faktura sanasi': 'Дата фактуры', "Qanday to'langan": 'Как оплачено', "Ko'rsatilmagan": 'Не указано', 'Bank hisob raqamidan': 'С расчётного счёта',
+  "Bankdan to'langan bo'lsa \"Bank\" bo'limida chiqim sifatida ko'rinadi. Kontragent tanlansa, to'lov alohida kiritiladi": 'Если оплачено с р/с, отображается как расход в разделе «Банк». При выборе контрагента платёж вносится отдельно'
+});

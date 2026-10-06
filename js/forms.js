@@ -25,7 +25,9 @@
         vm.hints.mxik = it.hint ? t('Qadoq: {0}', A.catName(it.hint)) : '';
         if (it.benefit) vm.hints.vat = t('Katalogda imtiyoz belgilangan (ID {0}). QQS turini tekshiring', it.benefit);
       } },
-    { k: 'name', label: 'Nomi', full: true, req: true, hint: "Katalog nomi o'zi qo'yiladi, xohlasangiz o'zgartiring. Bitta MXIK kodga bir nechta mahsulot ochish mumkin (masalan: Sheben 5-10 mm, Sheben 10-20 mm) — har birining qoldig'i alohida yuritiladi" },
+    { k: 'name', label: 'Mahsulot nomi (sizning nomingiz)', full: true, req: true, ph: 'Masalan: Lotok 3 m',
+      hint: "Katalog nomi o'zi qo'yiladi, xohlasangiz o'zgartiring. Bitta MXIK kodga bir nechta mahsulot ochish mumkin (masalan: Lotok 3 m, Lotok 6 m) — har birining qoldig'i, tannarxi va kalkulyatsiyasi alohida yuritiladi",
+      validate: (v, m) => (A.dupProduct(v, m.id) ? t('"{0}" nomli mahsulot allaqachon bor. Boshqa nom bering (masalan, o\'lchamini qo\'shing)', v.trim()) : '') },
     { k: 'unit', type: 'select', label: "Asosiy o'lchov birligi (ombor)", options: unitOpts, req: true, def: 'dona' },
     { k: 'units_alt', type: 'altunits', label: "Qo'shimcha o'lchov birliklari", full: true, def: () => [],
       hint: "Kirim va chiqimda tanlash uchun. Masalan: 1 qop = 50 kilogramm. Ombor qoldig'i asosiy birlikda yuritiladi",
@@ -62,11 +64,14 @@
     { k: 'category', type: 'select', label: 'Xarajat turi', req: true, def: 'other', options: () => A.EXP_CATS.map((c) => [c[0], t(c[1])]),
       onChange(m) { const c = A.EXP_CATS.find((x) => x[0] === m.category); if (c) m.deductible = c[2]; } },
     { k: 'cp', type: 'select', label: 'Kontragent', options: cpOpts, empty: 'Tanlanmagan' },
+    { k: 'paid', type: 'select', label: "Qanday to'langan", def: '', show: (m) => !m.cp, options: () => [['', t("Ko'rsatilmagan")], ['bank', t('Bank hisob raqamidan')], ['cash', t('Naqd')]],
+      hint: "Bankdan to'langan bo'lsa \"Bank\" bo'limida chiqim sifatida ko'rinadi. Kontragent tanlansa, to'lov alohida kiritiladi" },
     { k: 'descr', label: 'Tavsif', full: true },
     { k: 'amount', type: 'number', label: 'Summa (QQSsiz)', req: true },
     { k: 'vat', type: 'number', label: 'QQS summasi', def: 0, hint: (m) => (Engine.isVatPayer(S.firm) ? t('Hisobga olinadigan QQS (hisob-faktura bo\'lsa)') : t('Firma QQS to\'lovchi emas: QQS xarajatga qo\'shiladi')) },
     { k: 'deductible', type: 'check', label: "Foyda solig'ida chegiriladi", def: true, full: true },
     { k: 'note', type: 'textarea', label: 'Izoh', full: true },
+    { k: '_files', type: 'files', label: 'Hujjatlar (PDF, rasm)', full: true },
     { k: 'entries', type: 'entries', label: 'Provodkalar', full: true, def: () => [], suggest: (m) => Acc.suggestExpense(m, Engine.isVatPayer(S.firm)), validate: (v) => A.checkEntries(v, false) },
   ];
 
@@ -77,7 +82,14 @@
     { k: 'cp', type: 'select', label: 'Kontragent', req: true, options: cpOpts },
     { k: 'amount', type: 'number', label: 'Summa', req: true },
     { k: 'method', type: 'select', label: "To'lov usuli", def: 'bank', options: () => [['bank', t('Bank o\'tkazmasi')], ['cash', t('Naqd')], ['card', t('Plastik karta')], ['offset', t('O\'zaro hisob')]] },
+    { k: 'fak', type: 'select', label: 'Hisob-faktura', def: 'auto', full: true,
+      options: (m) => [['auto', m.direction === 'out' ? t("Avtomatik: kontragentdan kelgan fakturalar bo'yicha") : t("Avtomatik: kontragentga yuborilgan fakturalar bo'yicha")],
+        ['manual', m.direction === 'out' ? t('Faktura qabul qilingan (tizimga kiritilmagan)') : t('Faktura yuborilgan (tizimga kiritilmagan)')], ['none', t('Faktura talab qilinmaydi (soliq, ish haqi, qarz, kredit)')]],
+      hint: "Avtomatik rejimda to'lov shu kontragentning hujjatlariga (sotuv, kirim, xarajat, asosiy vosita) sana tartibida bog'lanadi" },
+    { k: 'fak_no', label: 'Faktura raqami', mono: true, show: (m) => m.fak === 'manual' },
+    { k: 'fak_date', type: 'date', label: 'Faktura sanasi', show: (m) => m.fak === 'manual' },
     { k: 'note', type: 'textarea', label: 'Izoh', full: true },
+    { k: '_files', type: 'files', label: 'Hujjatlar (PDF, rasm)', full: true },
     { k: 'entries', type: 'entries', label: 'Provodkalar', full: true, def: () => [], suggest: (m) => Acc.suggestPayment(m), validate: (v) => A.checkEntries(v, false) },
   ];
 
@@ -99,6 +111,7 @@
     { k: 'acc', type: 'acc', label: 'Asosiy vosita schyoti', hint: 'Masalan: 0160 transport, 0150 kompyuter' },
     { k: 'dep_acc', type: 'acc', label: 'Eskirish schyoti', show: (m) => m.depreciate, hint: "Bo'sh qolsa 02xx (vosita schyotiga mos)" },
     { k: 'note', type: 'textarea', label: 'Izoh', full: true },
+    { k: '_files', type: 'files', label: 'Hujjatlar (PDF, rasm)', full: true },
     { k: 'entries', type: 'entries', label: 'Provodkalar', full: true, def: () => [], suggest: (m) => Acc.suggestAsset(m, Engine.isVatPayer(S.firm)), validate: (v) => A.checkEntries(v, false) },
   ];
 
@@ -139,14 +152,23 @@
   ];
 
   /* Qisqa yordamchilar: forma ochish va saqlash */
+  /* Mahsulot nusxasi: o'sha MXIK, o'lchov va QQS bilan yangi variant */
+  function copyProduct(m) {
+    const init = JSON.parse(JSON.stringify(m));
+    ['id', 'created_at', 'created_by', 'updated_at', 'firm_id', 'kind', '_units', '_autoName', 'barcode'].forEach((k) => delete init[k]);
+    init.name = (m.name || '') + ' ' + t('(nusxa)');
+    A.closeModal();
+    setTimeout(() => editRec('product', null, { init }), 0);
+  }
   async function editRec(kind, rec, extra) {
     const titles = { product: ['Yangi mahsulot', 'Mahsulot'], warehouse: ['Yangi ombor', 'Ombor'], counterparty: ['Yangi kontragent', 'Kontragent'], expense: ['Yangi xarajat', 'Xarajat'], payment: ["Yangi to'lov", "To'lov"], asset: ['Yangi asosiy vosita', 'Asosiy vosita'] };
     const isNew = !rec || !rec.id;
     const locked = rec && A.lockedRec(rec);
     return A.openModal('rec-form', {
       title: t(titles[kind][isNew ? 0 : 1]), fields: F[kind](isNew), value: rec || (extra && extra.init) || {}, wide: kind === 'product' || kind === 'asset',
-      readonly: !!locked, note: locked ? t('Bu davr yopilgan, yozuvni faqat ko\'rish mumkin') : '',
+      readonly: !!locked, note: locked ? t('Bu davr yopilgan, yozuvni faqat ko\'rish mumkin') : kind === 'payment' && !isNew && window.Bank ? Bank.payStatus(rec).text : '',
       onSave: async (m) => { const d = { ...m }; delete d._units; delete d._autoName; return A.saveRec(kind, d); },
+      actions: kind === 'product' && !isNew ? [{ label: t("Nusxa olish (boshqa o'lcham/tur)"), run: (m) => copyProduct(m) }] : null,
       onDelete: async (m) => {
         if (['product', 'warehouse', 'counterparty'].includes(kind) && A.usedBy(m)) throw new Error(t("Bu yozuv hujjatlarda ishlatilgan, o'chirib bo'lmaydi"));
         return A.delRec(A.byId(m.id));

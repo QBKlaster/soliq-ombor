@@ -8,7 +8,7 @@
 
   const S = reactive({
     ready: false, store: null, user: null, lang, settings: { ...Store.DEFAULT_SETTINGS },
-    firms: [], users: [], firm: null, recs: [], calc: null, view: 'dash', adminView: 'users',
+    firms: [], users: [], firm: null, recs: [], files: [], calc: null, view: 'dash', adminView: 'users',
     units: [], content: [], toast: null, confirm: null, modals: [], busy: '', sideOpen: false, editDoc: null, sessionKicked: false
   });
 
@@ -70,7 +70,8 @@
   const ERR = {
     ERR_LOGIN: "Login yoki parol noto'g'ri", ERR_BLOCKED: 'Hisobingiz faol emas. Administratorga murojaat qiling',
     ERR_EXPIRED: "Obuna muddati tugagan. Administratorga murojaat qiling", ERR_FIRM_LIMIT: 'Firmalar limiti tugagan. Limitni oshirish uchun administratorga murojaat qiling',
-    ERR_LOGIN_TAKEN: 'Bu login band', ERR_PERIOD_CLOSED: 'Bu davr yopilgan. O\'zgartirish uchun avval davrni oching', ERR_CLOUD_IMPORT: 'Bulut rejimida zaxiradan tiklash mavjud emas', ERR_SELF_DELETE: "O'zingizni o'chira olmaysiz", ERR_NOT_ALLOWED: "Bu foydalanuvchini o'chirishga huquqingiz yo'q"
+    ERR_LOGIN_TAKEN: 'Bu login band', ERR_PERIOD_CLOSED: 'Bu davr yopilgan. O\'zgartirish uchun avval davrni oching', ERR_CLOUD_IMPORT: 'Bulut rejimida zaxiradan tiklash mavjud emas', ERR_SELF_DELETE: "O'zingizni o'chira olmaysiz", ERR_NOT_ALLOWED: "Bu foydalanuvchini o'chirishga huquqingiz yo'q",
+    ERR_NO_BUCKET: "Hujjatlar ombori sozlanmagan. Administrator Supabase'da yangilash SQL'ini ishga tushirishi kerak", ERR_FILE_MISSING: 'Fayl topilmadi'
   };
   const errText = (e) => { const m = (e && e.message) || String(e); return ERR[m] ? t(ERR[m]) : m; };
 
@@ -93,12 +94,13 @@
     try {
       S.firm = { ...f };
       S.recs = await S.store.loadRecords(f.id);
+      try { S.files = S.store.listFiles ? await S.store.listFiles(f.id) : []; } catch (e) { S.files = []; }
       recalc(); S.view = 'dash'; S.editDoc = null;
       try { localStorage.setItem('sh_last_firm', f.id); } catch (e) { }
     } catch (e) { toast(errText(e), 'err'); }
     S.busy = '';
   }
-  function closeFirm() { S.firm = null; S.recs = []; S.calc = null; S.editDoc = null; }
+  function closeFirm() { S.firm = null; S.recs = []; S.files = []; S.calc = null; S.editDoc = null; }
 
   const DATED = { doc: 'date', expense: 'date', payment: 'date', asset: 'acquire_date', journal: 'date' };
   function lockedRec(r) { return DATED[r.kind] && Engine.isLocked(S.firm, r[DATED[r.kind]]); }
@@ -130,6 +132,7 @@
   async function delRec(rec) {
     if (lockedRec(rec)) throw new Error('ERR_PERIOD_CLOSED');
     await S.store.deleteRecord(rec.id);
+    if (window.Files) await Files.removeRecFiles(rec.id);
     const i = S.recs.findIndex((x) => x.id === rec.id);
     if (i >= 0) S.recs.splice(i, 1);
     recalc();
@@ -151,6 +154,9 @@
   }
 
   const recsOf = (kind) => S.recs.filter((r) => r.kind === kind);
+  const normName = (s) => String(s || '').trim().replace(/\s+/g, ' ').toLowerCase();
+  /* bir xil nomli boshqa mahsulot bormi */
+  const dupProduct = (name, exceptId) => { const n = normName(name); return !!n && S.recs.find((r) => r.kind === 'product' && r.id !== exceptId && normName(r.name) === n); };
   const byId = (id) => S.recs.find((r) => r.id === id);
   const prodLabel = (id) => { const p = byId(id); return p ? p.name : '—'; };
 
@@ -166,6 +172,6 @@
     can, isStaff, loadContent, ACTS, actName,
     S, t, setLang, catName, unitName, money, qty, today, monthName, dateFmt, DOC_LABEL, vatLabel, REGIME_LABEL, EXP_CATS, expCat, MONTHS,
     toast, ask, answer, openModal, closeModal, errText, recalc, effSettings, profitRate, turnoverRate, loadFirms, openFirm, closeFirm,
-    saveRec, delRec, usedBy, saveFirm, recsOf, byId, prodLabel, lockedRec, label
+    saveRec, delRec, usedBy, saveFirm, recsOf, byId, dupProduct, normName, prodLabel, lockedRec, label
   };
 })();

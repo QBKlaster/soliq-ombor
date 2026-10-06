@@ -505,7 +505,7 @@
               <td class="n muted">{{i+1}}</td>
               <td class="prod"><prod-select :model-value="l.p" @update:model-value="setProd(l,$event)" @new="newProd(l,$event)" :wh="d.wh" :only="isProd ? 'produced' : ''" v-if="!locked"></prod-select><span v-else>{{prodLabel(l.p)}}</span>
                 <small class="mono muted" v-if="l.p">{{(byId(l.p)||{}).mxik}}</small>
-                <input v-if="l.p && !isProd && !locked" v-model="l.lname" class="lname" :placeholder="t('Nomi (ixtiyoriy)')" :aria-label="t('Qatordagi mahsulot nomi')">
+                <input v-if="l.p && !isProd && !locked" v-model="l.lname" class="lname" :placeholder="t('Qo\\'shimcha nom (ixtiyoriy)')" :title="t('Faqat shu hujjatda ko\\'rinadi. Qoldig\\'i alohida yuritilishi kerak bo\\'lsa, alohida mahsulot oching')" :aria-label="t('Qatordagi mahsulot nomi')">
                 <small v-else-if="l.lname" class="block">{{l.lname}}</small></td>
               <td class="muted">
                 <select v-if="!isInv && !isProd && unitsOf(l.p).length > 1" :value="lineUnit(l)" @change="unitChange(l, $event.target.value)" :disabled="locked" class="unit-sel" :aria-label="t('O\\'lchov birligi')">
@@ -589,7 +589,7 @@
     <section class="page">
       <header class="page-h"><div><h1>{{t('Mahsulotlar')}}</h1><p class="muted">{{t('MXIK kodini yozing: bir necha raqamdan keyin katalogdan mos kodlar chiqadi')}}</p></div>
         <button class="btn primary" @click="Forms.editRec('product')">+ {{t('Mahsulot qo\\'shish')}}</button></header>
-      <data-table :cols="cols" :rows="rows" clickable @row="Forms.editRec('product', $event)" export-name="mahsulotlar"></data-table>
+      <data-table :cols="cols" :rows="rows" clickable @row="Forms.editRec('product', byId($event.id))" export-name="mahsulotlar"></data-table>
     </section>`
   };
 
@@ -650,17 +650,17 @@
     data() { return { year: curYear() }; },
     computed: {
       rows() {
-        return A.recsOf('asset').map((a) => { const c = S.calc.assets[a.id] || {}; return { ...a, basis: c.basis || 0, monthly: c.monthly || 0, acc: c.accumulated || 0, residual: c.residual || 0, _cls: a.dispose_date ? 'muted-row' : '' }; })
+        return A.recsOf('asset').map((a) => { const c = S.calc.assets[a.id] || {}; return { ...a, basis: c.basis || 0, monthly: c.monthly || 0, accum: c.accumulated || 0, residual: c.residual || 0, _cls: a.dispose_date ? 'muted-row' : '' }; })
           .sort((a, b) => (a.acquire_date < b.acquire_date ? -1 : 1));
       },
       cols() {
         return [{ k: 'inv_no', label: 'Inv. №', mono: true }, { k: 'name', label: 'Nomi' }, { k: 'start_date', label: 'Ishga tushgan', f: (r) => A.dateFmt(r.start_date), x: (r) => r.start_date },
           { k: 'basis', label: "Boshlang'ich qiymat", num: true, f: (r) => A.money(r.basis) },
           { k: 'rate', label: 'Eskirish', f: (r) => (!r.depreciate ? t('Hisoblanmaydi') : r.method === 'amount' ? A.money(r.rate) + ' ' + t("so'm/oy") : r.rate + '% ' + t('yiliga')) },
-          { k: 'monthly', label: 'Oylik eskirish', num: true, f: (r) => A.money(r.monthly) }, { k: 'acc', label: 'Jamg\'arilgan eskirish', num: true, f: (r) => A.money(r.acc) },
-          { k: 'residual', label: 'Qoldiq qiymat', num: true, f: (r) => A.money(r.residual) }];
+          { k: 'monthly', label: 'Oylik eskirish', num: true, f: (r) => A.money(r.monthly) }, { k: 'accum', label: 'Jamg\'arilgan eskirish', num: true, f: (r) => A.money(r.accum) },
+          { k: 'residual', label: 'Qoldiq qiymat', num: true, f: (r) => A.money(r.residual) }, { k: '_f', label: '📎', noexp: true, cls: 'fcount', f: (r) => Files.countOf(r.id) || '', sv: (r) => Files.countOf(r.id) }];
       },
-      foot() { const s = (k) => this.rows.reduce((a, r) => a + r[k], 0); return { basis: s('basis'), monthly: s('monthly'), acc: s('acc'), residual: s('residual') }; },
+      foot() { const s = (k) => this.rows.reduce((a, r) => a + r[k], 0); return { basis: s('basis'), monthly: s('monthly'), accum: s('accum'), residual: s('residual') }; },
       sched() {
         const ms = Array.from({ length: 12 }, (_, i) => this.year + '-' + String(i + 1).padStart(2, '0'));
         return { ms, rows: A.recsOf('asset').filter((a) => a.depreciate).map((a) => { const s = (S.calc.assets[a.id] || {}).schedule || {}; const v = ms.map((m) => s[m] || 0); return { a, v, sum: v.reduce((x, y) => x + y, 0) }; }) };
@@ -676,7 +676,7 @@
     <section class="page">
       <header class="page-h"><div><h1>{{t('Asosiy vositalar')}}</h1><p class="muted">{{t('Eskirish qaysi vositalarga hisoblanishini va uning miqdorini (foizda yoki so\\'mda) o\\'zingiz belgilaysiz')}}</p></div>
         <button class="btn primary" @click="Forms.editRec('asset')">+ {{t('Vosita qo\\'shish')}}</button></header>
-      <data-table :cols="cols" :rows="rows" :foot="foot" clickable @row="Forms.editRec('asset', $event)" export-name="asosiy_vositalar"></data-table>
+      <data-table :cols="cols" :rows="rows" :foot="foot" clickable @row="Forms.editRec('asset', byId($event.id))" export-name="asosiy_vositalar"></data-table>
       <div class="panel">
         <div class="panel-h"><h2>{{t('Eskirish jadvali')}}</h2><span class="grow"></span>
           <select v-model.number="year" id="as-year"><option v-for="y in [curYear()-2,curYear()-1,curYear(),curYear()+1]" :key="y" :value="y">{{y}}</option></select>
@@ -699,7 +699,7 @@
         return [{ k: 'date', label: 'Sana', f: (r) => A.dateFmt(r.date), x: (r) => r.date }, { k: 'number', label: '№', mono: true }, { k: 'category', label: 'Turi', f: (r) => A.expCat(r.category) },
           { k: 'descr', label: 'Tavsif' }, { k: 'cp', label: 'Kontragent', f: (r) => cpName(r.cp) },
           { k: 'amount', label: 'QQSsiz', num: true, f: (r) => A.money(r.amount) }, { k: 'vat', label: 'QQS', num: true, f: (r) => A.money(r.vat) }, { k: 'total', label: 'Jami', num: true, f: (r) => A.money(r.total) },
-          { k: 'deductible', label: 'Chegiriladi', f: (r) => (r.deductible ? t('Ha') : t("Yo'q")) }];
+          { k: 'deductible', label: 'Chegiriladi', f: (r) => (r.deductible ? t('Ha') : t("Yo'q")) }, { k: '_f', label: '📎', noexp: true, cls: 'fcount', f: (r) => Files.countOf(r.id) || '', sv: (r) => Files.countOf(r.id) }];
       },
       foot() { const s = (k) => this.rows.reduce((a, r) => a + (Number(r[k]) || 0), 0); return { amount: s('amount'), vat: s('vat'), total: s('total') }; }
     },
@@ -708,7 +708,7 @@
       <header class="page-h"><div><h1>{{t('Xarajatlar')}}</h1><p class="muted">{{t('Foyda solig\\'ida chegiriladigan va chegirilmaydigan xarajatlar alohida hisoblanadi')}}</p></div>
         <button class="btn primary" @click="Forms.editRec('expense')">+ {{t('Xarajat qo\\'shish')}}</button></header>
       <div class="filters"><label class="inline"><span>{{t('Oy')}}</span><input type="month" v-model="month" id="ex-month"></label></div>
-      <data-table :cols="cols" :rows="rows" :foot="foot" clickable @row="Forms.editRec('expense', $event)" export-name="xarajatlar"></data-table>
+      <data-table :cols="cols" :rows="rows" :foot="foot" clickable @row="Forms.editRec('expense', byId($event.id))" export-name="xarajatlar"></data-table>
     </section>`
   };
 
@@ -726,11 +726,11 @@
           { k: 'bal', label: 'Saldo', num: true, f: (r) => A.money(r.bal), cls: '' }];
       },
       foot() { const s = (k) => this.rows.reduce((a, r) => a + r[k], 0); return { they: s('they'), we: s('we'), bal: s('bal') }; },
-      pays() { return A.recsOf('payment').sort((a, b) => (a.date < b.date ? 1 : -1)).map((p) => ({ ...p, _cls: A.lockedRec(p) ? 'locked' : '' })); },
+      pays() { const m = Bank.match(); return A.recsOf('payment').sort((a, b) => (a.date < b.date ? 1 : -1)).map((p) => ({ ...p, fk: Bank.payStatus(p, m), _cls: A.lockedRec(p) ? 'locked' : '' })); },
       payCols() {
         return [{ k: 'date', label: 'Sana', f: (r) => A.dateFmt(r.date), x: (r) => r.date }, { k: 'number', label: '№', mono: true },
           { k: 'direction', label: "Yo'nalish", f: (r) => (r.direction === 'in' ? t('Kirim') : t('Chiqim')) }, { k: 'cp', label: 'Kontragent', f: (r) => cpName(r.cp) },
-          { k: 'amount', label: 'Summa', num: true, f: (r) => A.money(r.amount) }, { k: 'method', label: 'Usul', f: (r) => ({ bank: t('Bank'), cash: t('Naqd'), card: t('Karta'), offset: t("O'zaro hisob") }[r.method] || '') }, { k: 'note', label: 'Izoh' }];
+          { k: 'amount', label: 'Summa', num: true, f: (r) => A.money(r.amount) }, { k: 'method', label: 'Usul', f: (r) => ({ bank: t('Bank'), cash: t('Naqd'), card: t('Karta'), offset: t("O'zaro hisob") }[r.method] || '') }, { k: 'fk', label: 'Hisob-faktura', f: (r) => r.fk.text, cls: (r) => ({ full: 'st-ok', part: 'st-warn', none: 'st-bad', skip: 'muted' }[r.fk.st]), sv: (r) => r.fk.st }, { k: 'note', label: 'Izoh' }, { k: '_f', label: '📎', noexp: true, cls: 'fcount', f: (r) => Files.countOf(r.id) || '', sv: (r) => Files.countOf(r.id) }];
       }
     },
     template: `
@@ -740,7 +740,7 @@
         <button class="btn primary" @click="Forms.editRec('counterparty')">+ {{t('Kontragent')}}</button></div></header>
       <div class="tabs"><button :class="{on:tab==='list'}" @click="tab='list'">{{t('Kontragentlar va qarzlar')}}</button><button :class="{on:tab==='pay'}" @click="tab='pay'">{{t('To\\'lovlar')}}</button></div>
       <data-table v-if="tab==='list'" :cols="cols" :rows="rows" :foot="foot" clickable @row="Forms.editRec('counterparty', $event)" export-name="kontragentlar"></data-table>
-      <data-table v-else :cols="payCols" :rows="pays" clickable @row="Forms.editRec('payment', $event)" export-name="tolovlar"></data-table>
+      <data-table v-else :cols="payCols" :rows="pays" clickable @row="Forms.editRec('payment', byId($event.id))" export-name="tolovlar"></data-table>
     </section>`
   };
 
